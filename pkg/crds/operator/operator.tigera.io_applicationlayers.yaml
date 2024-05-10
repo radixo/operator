@@ -79,6 +79,11 @@ spec:
                     format: int64
                     type: integer
                 type: object
+              proxyMode:
+                description: 'Option that indicates the strategy that will be deployed
+                  as proxy strategy for ApplicationLayer features (ALP, WAF and Logging).
+                  Possible values: Sidecar.'
+                type: string
               webApplicationFirewall:
                 description: WebApplicationFirewall controls whether or not ModSecurity
                   enforcement is enabled for the cluster. When enabled, Services may

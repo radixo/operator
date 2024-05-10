@@ -32,11 +32,16 @@ type ApplicationLayerSpec struct {
 	ApplicationLayerPolicy *ApplicationLayerPolicyStatusType `json:"applicationLayerPolicy,omitempty"`
 	// User-configurable settings for the Envoy proxy.
 	EnvoySettings *EnvoySettings `json:"envoy,omitempty"`
+	// Option that indicates the strategy that will be deployed as proxy
+	// strategy for ApplicationLayer features (ALP, WAF and Logging).
+	// Possible values: Sidecar.
+	ProxyMode *ProxyModeType `json:"proxyMode,omitempty"`
 }
 
 type LogCollectionStatusType string
 type WAFStatusType string
 type ApplicationLayerPolicyStatusType string
+type ProxyModeType string
 
 const (
 	WAFDisabled                    WAFStatusType                    = "Disabled"
@@ -45,6 +50,7 @@ const (
 	L7LogCollectionEnabled         LogCollectionStatusType          = "Enabled"
 	ApplicationLayerPolicyEnabled  ApplicationLayerPolicyStatusType = "Enabled"
 	ApplicationLayerPolicyDisabled ApplicationLayerPolicyStatusType = "Disabled"
+	ProxyModeSidecar               ProxyModeType                    = "Sidecar"
 )
 
 type EnvoySettings struct {
