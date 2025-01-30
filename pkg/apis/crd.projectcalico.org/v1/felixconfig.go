@@ -408,6 +408,10 @@ type FelixConfigurationSpec struct {
 	// `[fd00:83a6::12]:5353`.Note that Felix (calico-node) will need RBAC permission to read the details of
 	// each service specified by a `k8s-service:...` form. [Default: "k8s-service:kube-dns"].
 	DNSTrustedServers *[]string `json:"dnsTrustedServers,omitempty"`
+
+	// WAFEventLogsFileEnabled controls logging WAFEvent logs to a file. If false no WAFEvent logging to file will occur.
+	// [Default: false]
+	WAFEventLogsFileEnabled *bool `json:"wafEventLogsFileEnabled,omitempty"`
 }
 
 type RouteTableRange struct {
