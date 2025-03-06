@@ -281,6 +281,7 @@ func (r *ReconcileApplicationLayer) Reconcile(ctx context.Context, request recon
 		PerHostLogsEnabled:          r.isLogsCollectionEnabled(&instance.Spec),
 		PerHostALPEnabled:           r.isALPEnabled(&instance.Spec),
 		SidecarInjectionEnabled:     r.isSidecarInjectionEnabled(&instance.Spec),
+		DaemonsetMode:               r.hasDaemonsetMode(&instance.Spec),
 		LogRequestsPerInterval:      lcSpec.LogRequestsPerInterval,
 		LogIntervalSeconds:          lcSpec.LogIntervalSeconds,
 		WAFRulesetConfigMap:         wafRulesetConfig,
@@ -352,6 +353,7 @@ func updateApplicationLayerWithDefaults(al *operatorv1.ApplicationLayer) {
 		defaultApplicationLayerPolicyStatusType operatorv1.ApplicationLayerPolicyStatusType = operatorv1.ApplicationLayerPolicyDisabled
 		defaultSidecarStatusType                operatorv1.SidecarStatusType                = operatorv1.SidecarDisabled
 		defaultSidecarWebhookStateType          operatorv1.SidecarWebhookStateType          = operatorv1.SidecarWebhookStateDisabled
+		defaultDaemonsetModeStatusType          operatorv1.DaemonsetModeStatusType          = operatorv1.DaemonsetModeDisabled
 	)
 
 	if al.Spec.LogCollection == nil {
@@ -393,6 +395,15 @@ func updateApplicationLayerWithDefaults(al *operatorv1.ApplicationLayer) {
 	if al.Status.SidecarWebhook == nil {
 		al.Status.SidecarWebhook = &defaultSidecarWebhookStateType
 	}
+
+	if al.Spec.DaemonsetMode == nil {
+		al.Spec.DaemonsetMode = &defaultDaemonsetModeStatusType
+	} else if *al.Spec.DaemonsetMode == operatorv1.DaemonsetModeEnabled {
+		// Force to disable old TPROXY mode
+		al.Spec.WebApplicationFirewall = &defaultWebApplicationFirewallStatusType
+		al.Spec.ApplicationLayerPolicy = &defaultApplicationLayerPolicyStatusType
+		al.Spec.SidecarInjection = &defaultSidecarStatusType
+	}
 }
 
 // validateApplicationLayer validates ApplicationLayer
@@ -416,6 +427,11 @@ func validateApplicationLayer(al *operatorv1.ApplicationLayer) error {
 
 	if *al.Spec.SidecarInjection == operatorv1.SidecarEnabled {
 		log.Info("L7 SidecarInjection found enabled")
+		atLeastOneFeatureDetected = true
+	}
+
+	if *al.Spec.DaemonsetMode == operatorv1.DaemonsetModeEnabled {
+		log.Info("L7 DaemonsetMode found enabled")
 		atLeastOneFeatureDetected = true
 	}
 	// If ApplicationLayer spec exists then one of its features should be set.
@@ -481,6 +497,11 @@ func (r *ReconcileApplicationLayer) isWAFEnabled(applicationLayerSpec *operatorv
 func (r *ReconcileApplicationLayer) isSidecarInjectionEnabled(applicationLayerSpec *operatorv1.ApplicationLayerSpec) bool {
 	return applicationLayerSpec.SidecarInjection != nil &&
 		*applicationLayerSpec.SidecarInjection == operatorv1.SidecarEnabled
+}
+
+func (r *ReconcileApplicationLayer) hasDaemonsetMode(applicationLayerSpec *operatorv1.ApplicationLayerSpec) bool {
+	return applicationLayerSpec.DaemonsetMode != nil &&
+		*applicationLayerSpec.DaemonsetMode == operatorv1.DaemonsetModeEnabled
 }
 
 func (r *ReconcileApplicationLayer) getPolicySyncPathPrefix(fcSpec *crdv1.FelixConfigurationSpec, al *operatorv1.ApplicationLayer) string {
@@ -551,16 +572,19 @@ func (r *ReconcileApplicationLayer) patchFelixConfiguration(ctx context.Context,
 		tproxyModeSetDesired := fc.Spec.TPROXYMode != nil && *fc.Spec.TPROXYMode == tproxyMode
 		wafEventLogsFileEnabled := al != nil && ((al.Spec.SidecarInjection != nil && *al.Spec.SidecarInjection == operatorv1.SidecarEnabled) ||
 			(al.Spec.WebApplicationFirewall != nil && *al.Spec.WebApplicationFirewall == operatorv1.WAFEnabled))
-		wafEventLogsFileEnabledDesired := fc.Spec.WAFEventLogsFileEnabled != nil && *fc.Spec.WAFEventLogsFileEnabled == wafEventLogsFileEnabled
+		wafEventLogsFileEnabledSetDesired := fc.Spec.WAFEventLogsFileEnabled != nil && *fc.Spec.WAFEventLogsFileEnabled == wafEventLogsFileEnabled
+		interceptingProxyEnabled := al != nil && *al.Spec.DaemonsetMode == operatorv1.DaemonsetModeEnabled
+		interceptingProxyEnabledSetDesired := fc.Spec.InterceptingProxyEnabled != nil && *fc.Spec.InterceptingProxyEnabled == interceptingProxyEnabled
 
 		// If tproxy mode is already set to desired state return false to indicate patch not needed.
-		if policySyncPrefixSetDesired && tproxyModeSetDesired && wafEventLogsFileEnabledDesired {
+		if policySyncPrefixSetDesired && tproxyModeSetDesired && wafEventLogsFileEnabledSetDesired && interceptingProxyEnabledSetDesired {
 			return false, nil
 		}
 
 		fc.Spec.TPROXYMode = &tproxyMode
 		fc.Spec.PolicySyncPathPrefix = policySyncPrefix
 		fc.Spec.WAFEventLogsFileEnabled = &wafEventLogsFileEnabled
+		fc.Spec.InterceptingProxyEnabled = &interceptingProxyEnabled
 
 		log.Info(
 			"Patching FelixConfiguration: ",

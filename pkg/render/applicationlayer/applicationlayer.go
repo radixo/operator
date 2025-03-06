@@ -67,9 +67,25 @@ const (
 func ApplicationLayer(
 	config *Config,
 ) render.Component {
-	return &component{
+	c := &component{
 		config: config,
 	}
+
+	c.config.dikastesEnabled = c.config.PerHostWAFEnabled ||
+		c.config.PerHostALPEnabled ||
+		c.config.SidecarInjectionEnabled ||
+		c.config.DaemonsetMode
+
+	c.config.l7logcollectorEnabled = c.config.PerHostLogsEnabled ||
+		c.config.SidecarInjectionEnabled ||
+		c.config.DaemonsetMode
+
+	c.config.perHostEnvoyEnabled = c.config.PerHostWAFEnabled ||
+		c.config.PerHostALPEnabled ||
+		c.config.PerHostLogsEnabled ||
+		c.config.DaemonsetMode
+
+	return c
 }
 
 type component struct {
@@ -98,6 +114,9 @@ type Config struct {
 
 	// Optional config for SidecarInjection
 	SidecarInjectionEnabled bool
+
+	// Optional config for DaemonsetMode
+	DaemonsetMode bool
 
 	// Calculated internal fields.
 	proxyImage            string
@@ -158,19 +177,8 @@ func (c *component) Objects() ([]client.Object, []client.Object) {
 	// If l7spec is provided render the required objects.
 	objs = append(objs, c.serviceAccount())
 
-	c.config.dikastesEnabled = c.config.PerHostWAFEnabled ||
-		c.config.PerHostALPEnabled ||
-		c.config.SidecarInjectionEnabled
-
-	c.config.l7logcollectorEnabled = c.config.PerHostLogsEnabled ||
-		c.config.SidecarInjectionEnabled
-
-	c.config.perHostEnvoyEnabled = c.config.PerHostWAFEnabled ||
-		c.config.PerHostALPEnabled ||
-		c.config.PerHostLogsEnabled
-
 	// If Web Application Firewall or Sidecar Injection is enabled, we need WAF ruleset ConfigMap present.
-	if c.config.PerHostWAFEnabled || c.config.SidecarInjectionEnabled {
+	if c.config.PerHostWAFEnabled || c.config.SidecarInjectionEnabled || c.config.DaemonsetMode {
 		// this ConfigMap is a copy of the provided configuration from the operator namespace into the calico-system namespace
 		objs = append(objs, c.wafRulesetConfigMap())
 		objs = append(objs, c.defaultCoreRulesetConfigMap())

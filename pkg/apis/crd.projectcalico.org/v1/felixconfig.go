@@ -412,6 +412,12 @@ type FelixConfigurationSpec struct {
 	// WAFEventLogsFileEnabled controls logging WAFEvent logs to a file. If false no WAFEvent logging to file will occur.
 	// [Default: false]
 	WAFEventLogsFileEnabled *bool `json:"wafEventLogsFileEnabled,omitempty"`
+
+	// InterceptingProxyEnabled sets whether traffic is directed through an intercepting proxy
+	// for L7 features.
+	// This configuration deprecates TPROXYMode configuration.
+	// [Default: false]
+	InterceptingProxyEnabled *bool `json:"interceptingProxyEnabled,omitempty"`
 }
 
 type RouteTableRange struct {

@@ -44,6 +44,10 @@ type ApplicationLayerSpec struct {
 	// The per-host proxy will continue to be used for pods without this label.
 	// +optional
 	SidecarInjection *SidecarStatusType `json:"sidecarInjection,omitempty"`
+
+	// DaemonsetMode enables L7 features using daemonset mode.
+	// +optional
+	DaemonsetMode *DaemonsetModeStatusType `json:"daemonsetMode,omitempty"`
 }
 
 // +kubebuilder:validation:Enum=Enabled;Disabled
@@ -61,6 +65,9 @@ type SidecarStatusType string
 // +kubebuilder:validation:Enum=Enabled;Disabled
 type SidecarWebhookStateType string
 
+// +kubebuilder:validation:Enum=Enabled;Disabled
+type DaemonsetModeStatusType string
+
 const (
 	WAFDisabled                    WAFStatusType                    = "Disabled"
 	WAFEnabled                     WAFStatusType                    = "Enabled"
@@ -72,6 +79,8 @@ const (
 	SidecarDisabled                SidecarStatusType                = "Disabled"
 	SidecarWebhookStateEnabled     SidecarWebhookStateType          = "Enabled"
 	SidecarWebhookStateDisabled    SidecarWebhookStateType          = "Disabled"
+	DaemonsetModeEnabled           DaemonsetModeStatusType          = "Enabled"
+	DaemonsetModeDisabled          DaemonsetModeStatusType          = "Disabled"
 )
 
 type EnvoySettings struct {

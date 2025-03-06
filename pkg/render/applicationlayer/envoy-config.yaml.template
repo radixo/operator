@@ -1,4 +1,4 @@
-{{- define "access_log" -}}
+{{- define "access_log_old_compat" -}}
                 access_log:
                   - name: envoy.access_loggers.file
                     typed_config:
@@ -22,6 +22,21 @@
                         upstream_host: "%UPSTREAM_HOST%"
                         upstream_local_address: "%UPSTREAM_LOCAL_ADDRESS%"
                         upstream_service_time: "%RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)%"
+{{- end -}}
+
+{{- define "access_log" -}}
+                access_log:
+                  - name: envoy.access_loggers.grpc
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.access_loggers.grpc.v3.HttpGrpcAccessLogConfig
+                      common_config:
+                        log_name: "{{.}}"
+                        grpc_service:
+                          google_grpc:
+                            target_uri: unix:///var/run/l7-collector/l7-collector.sock
+                            stat_prefix: envoylogs1
+                          timeout: 0.5s
+                        transport_api_version: V3
 {{- end -}}
 
 {{- define "DIKASTES" -}}
@@ -74,7 +89,8 @@ static_resources:
                 "@type": type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
                 stat_prefix: ingress_tls
                 cluster: original_dst_cluster
-                {{if .PerHostLogsEnabled}}{{template "access_log" "tls"}}{{end}}
+                {{if .DaemonsetMode}}{{template "access_log" "tls"}}{{end}}
+                {{if .PerHostLogsEnabled}}{{template "access_log_old_compat" "tls"}}{{end}}
         - filter_chain_match:
             application_protocols:
               - http/1.0
@@ -85,7 +101,8 @@ static_resources:
                 "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
                 stat_prefix: ingress_http
                 {{template "XFF" .}}
-                {{if .PerHostLogsEnabled}}{{template "access_log" "%PROTOCOL%"}}{{end}}
+                {{if .DaemonsetMode}}{{template "access_log" "%PROTOCOL%"}}{{end}}
+                {{if .PerHostLogsEnabled}}{{template "access_log_old_compat" "%PROTOCOL%"}}{{end}}
                 route_config:
                   name: local_service
                   virtual_hosts:
@@ -112,7 +129,8 @@ static_resources:
                 "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
                 stat_prefix: ingress_http
                 {{template "XFF" .}}
-                {{if .PerHostLogsEnabled}}{{template "access_log" "%PROTOCOL%"}}{{end}}
+                {{if .DaemonsetMode}}{{template "access_log" "%PROTOCOL%"}}{{end}}
+                {{if .PerHostLogsEnabled}}{{template "access_log_old_compat" "%PROTOCOL%"}}{{end}}
                 route_config:
                   name: local_service
                   virtual_hosts:
@@ -137,7 +155,8 @@ static_resources:
                 "@type": type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
                 stat_prefix: ingress_tcp
                 cluster: original_dst_cluster
-                {{if .PerHostLogsEnabled}}{{template "access_log" "tcp"}}{{end}}
+                {{if .DaemonsetMode}}{{template "access_log" "tcp"}}{{end}}
+                {{if .PerHostLogsEnabled}}{{template "access_log_old_compat" "tcp"}}{{end}}
     - name: nodeports
       transparent: true
       address:
