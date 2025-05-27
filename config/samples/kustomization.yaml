@@ -20,6 +20,7 @@ resources:
 - operator_v1_nonclusterhost.yaml
 - operator_v1_packetcaptureapi.yaml
 - operator_v1_policyrecommendation.yaml
+- operator_v1_servicemesh.yaml
 - operator_v1_tenant.yaml
 - operator_v1_tigerastatus.yaml
 - operator_v1_tlspassthroughroute.yaml

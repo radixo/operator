@@ -266,6 +266,25 @@ $(ENVOY_GATEWAY_RESOURCES): $(HACK_BIN)/helm-$(BUILDARCH)
 		--include-crds \
 	>> $@
 
+# Sail operator resources
+SAIL_OPERATOR_REPO ?= github.com/istio-ecosystem/sail-operator
+SAIL_OPERATOR_VERSION ?= 1.26.0
+SAIL_OPERATOR_DIR ?= .sail-operator-$(SAIL_OPERATOR_VERSION)
+SAIL_OPERATOR_PREFIX ?= tigera-istio
+SAIL_OPERATOR_NAMESPACE ?= tigera-catio
+SAIL_OPERATOR_RESOURCES = pkg/render/sail_operator_resources.yaml
+
+$(SAIL_OPERATOR_DIR):
+	rm -rf $(SAIL_OPERATOR_DIR)
+	mkdir $(SAIL_OPERATOR_DIR)
+	curl -L https://$(SAIL_OPERATOR_REPO)/archive/refs/tags/$(SAIL_OPERATOR_VERSION).tar.gz | \
+		tar --strip-components=1 -xzC $(SAIL_OPERATOR_DIR)
+
+$(SAIL_OPERATOR_RESOURCES): $(HACK_BIN)/helm-$(BUILDARCH) $(SAIL_OPERATOR_DIR)
+	$(HELM_BUILDARCH_BINARY) template $(SAIL_OPERATOR_PREFIX) $(SAIL_OPERATOR_DIR)/chart \
+		--set deployment.name=tigera-sail-operator,serviceAccountName=tigera-sail-operator \
+		-n $(SAIL_OPERATOR_NAMESPACE) --include-crds > $@
+
 $(HELM_BUILDARCH_BINARY): $(HACK_BIN) $(HELM_BUILDARCH_VERSIONED_BINARY)
 	$(info ░▒▓ symlink $(HELM_BUILDARCH_VERSIONED_BINARY) -> $(HELM_BUILDARCH_BINARY))
 	@ln -sf helm-$(BUILDARCH)-$(HELM3_VERSION) $(HACK_BIN)/helm-$(BUILDARCH)
@@ -331,6 +350,7 @@ clean:
 	rm -rf .crds
 	rm -f *-release-notes.md
 	docker rmi -f $(shell docker images -f "reference=$(BUILD_IMAGE):latest*" -q) > /dev/null 2>&1 || true
+	rm -rf $(SAIL_OPERATOR_DIR)
 
 ###############################################################################
 # Tests

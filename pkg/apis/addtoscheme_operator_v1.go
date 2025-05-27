@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2024 Tigera, Inc. All rights reserved.
+// Copyright (c) 2020-2025 Tigera, Inc. All rights reserved.
 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@ package apis
 import (
 	esv1 "github.com/elastic/cloud-on-k8s/v2/pkg/apis/elasticsearch/v1"
 	kbv1 "github.com/elastic/cloud-on-k8s/v2/pkg/apis/kibana/v1"
+	sailoperatorv1 "github.com/istio-ecosystem/sail-operator/api/v1"
+	sailoperatorv1alpha1 "github.com/istio-ecosystem/sail-operator/api/v1alpha1"
 	configv1 "github.com/openshift/api/config/v1"
 	ocsv1 "github.com/openshift/api/security/v1"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
@@ -41,4 +43,6 @@ func init() {
 	AddToSchemes = append(AddToSchemes, policyv1.SchemeBuilder.AddToScheme)
 	AddToSchemes = append(AddToSchemes, policyv1beta1.SchemeBuilder.AddToScheme)
 	AddToSchemes = append(AddToSchemes, monitoringv1.SchemeBuilder.AddToScheme)
+	AddToSchemes = append(AddToSchemes, sailoperatorv1.AddToScheme)
+	AddToSchemes = append(AddToSchemes, sailoperatorv1alpha1.AddToScheme)
 }
